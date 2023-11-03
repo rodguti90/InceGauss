@@ -8,6 +8,7 @@
 (*Begin the package*)
 
 
+ClearAll["InceGauss`*","InceGauss`*`*"]
 BeginPackage["InceGauss`"];
 
 
@@ -30,15 +31,15 @@ BeginPackage["InceGauss`"];
 
 
 InceC::usage="InceC[TotN,\[Mu],\[Epsilon],z] gives the even Ince polynomial \!\(\*FormBox[SubscriptBox[\(C\), \(N, \[Mu]\)],
-TraditionalForm]\)(z). TotN and \[Mu] must have the same parity and \[Mu]\[GreaterEqual]0. It is defined as a sum of even and odd cosines. ";
+TraditionalForm]\)(z). TotN and \[Mu] must be positive integers and have the same parity. It is defined as a sum of even and odd cosines. ";
 InceS::usage="InceS[TotN,\[Mu],\[Epsilon],z] gives the odd Ince polynomial \!\(\*FormBox[SubscriptBox[\(S\), \(N, \[Mu]\)],
-TraditionalForm]\)(z). TotN and \[Mu] must have the same parity and \[Mu]>0. It is defined as a sum of even and odd sines. ";
+TraditionalForm]\)(z). TotN and \[Mu] must be positive integers and have the same parity. It is defined as a sum of even and odd sines. ";
 
 
 Begin["`Private`"];
 
 
-InceC[TotN_Integer,\[Mu]_Integer,\[Epsilon]_,z_]:=Block[{zl,j,l,n,tM,eta,A,ip},
+InceC[TotN_Integer,\[Mu]_Integer,\[Epsilon]_,z_,norm_:"pol"]:=Block[{zl,j,l,n,tM,eta,A,ip},
 InceC[TotN,\[Mu],\[Epsilon],zl_]=If[EvenQ[TotN],
 (* TotN Even *)
 j=TotN/2;  l=j+1; n=\[Mu]/2 +1;
@@ -47,18 +48,24 @@ If[TotN==0,
 tM=DiagonalMatrix[Table[\[Epsilon] (j+k),{k,1,l-1}],1]+DiagonalMatrix[Join[{2\[Epsilon] j},Table[\[Epsilon] (j-k),{k,1,l-2}]],-1]+DiagonalMatrix[Join[{0},Table[4 (k+1)^2,{k,0,l-2}]]];
 {eta,A}=SortBy[Eigensystem[tM]\[Transpose],First]\[Transpose];
 ip=Plus@@(Table[Cos[(2k)zl],{k,0,l-1}]A[[n]]);
-Sign[Plus@@A[[n]]]ip /Sqrt[A[[n]].A[[n]]]],
+If[norm=="pol",
+Sign[Plus@@A[[n]]]ip /Sqrt[2A[[n,1]]^2+A[[n,2;;]].A[[n,2;;]]],
+Sign[Plus@@A[[n]]]ip /\[Sqrt](2Gamma[l]^2 A[[n,1]]^2+Total[Gamma[l+Range[j]]Gamma[l-Range[j]]A[[n,2;;]]^2])]
+],
 (* TotN Odd *)
 j=(TotN-1)/2;  l=j+1; n=(\[Mu]+1)/2 ;
 tM=DiagonalMatrix[Table[\[Epsilon]/2 (TotN+(2k+3)),{k,0,l-2}],1]+DiagonalMatrix[Table[\[Epsilon] /2 (TotN-(2k-1)),{k,1,l-1}],-1]+DiagonalMatrix[Join[{\[Epsilon]/2 (1+TotN)+1},Table[ (2k+1)^2,{k,1,l-1}]]];
 {eta,A}=SortBy[Eigensystem[tM]\[Transpose],First]\[Transpose];
 ip=Plus@@(Table[Cos[(2k+1)zl],{k,0,l-1}]A[[n]]);
-Sign[Plus@@A[[n]]]ip /Sqrt[A[[n]].A[[n]]]
-]//Simplify;
+If[norm=="pol",
+Sign[Plus@@A[[n]]]ip /Sqrt[A[[n]].A[[n]]],
+Sign[Plus@@A[[n]]]ip /\[Sqrt](Total[Gamma[l+(Range[1,TotN,2]+1)/2]Gamma[l+(-Range[1,TotN,2]+1)/2]A[[n]]^2])
+]
+];
 InceC[TotN,\[Mu],\[Epsilon],z]
 ]
 
-InceS[TotN_Integer,\[Mu]_Integer,\[Epsilon]_,z_]:=Block[{zl,j,l,n,tM,eta,A,ip},
+InceS[TotN_Integer,\[Mu]_Integer,\[Epsilon]_,z_,norm_:"pol"]:=Block[{zl,j,l,n,tM,eta,A,ip},
 InceS[TotN,\[Mu],\[Epsilon],zl_]=
 If[EvenQ[TotN],
 (* TotN Even *)
@@ -66,16 +73,23 @@ j=TotN/2;  l=j+1; n=\[Mu]/2 ;
 tM=DiagonalMatrix[Table[\[Epsilon] (j+k),{k,2,l-1}],1]+DiagonalMatrix[Table[\[Epsilon] (j-k),{k,1,l-2}],-1]+DiagonalMatrix[Table[4 (k+1)^2,{k,0,l-2}]];
 {eta,A}=SortBy[Eigensystem[tM]\[Transpose],First]\[Transpose];
 ip=Plus@@(Table[Sin[(2k)zl],{k,1,l-1}]A[[n]]);
+If[norm=="pol",
 Sign[Plus@@(Table[k,{k,1,l-1}]A[[n]])]ip /Sqrt[A[[n]].A[[n]]],
+Sign[Plus@@(Table[k,{k,1,l-1}]A[[n]])]ip /\[Sqrt](Total[Gamma[l+Range[j]]Gamma[l-Range[j]]A[[n]]^2])
+],
 (* TotN Odd *)
 j=(TotN-1)/2;  l=j+1; n=(\[Mu]+1)/2 ;
 tM=DiagonalMatrix[Table[\[Epsilon]/2 (TotN+(2k+3)),{k,0,l-2}],1]+DiagonalMatrix[Table[\[Epsilon] /2 (TotN-(2k-1)),{k,1,l-1}],-1]+DiagonalMatrix[Join[{-(\[Epsilon]/2)(1+TotN)+1},Table[ (2k+1)^2,{k,1,l-1}]]];
 {eta,A}=SortBy[Eigensystem[tM]\[Transpose],First]\[Transpose];
 ip=Plus@@(Table[Sin[(2k+1)zl],{k,0,l-1}]A[[n]]);
-Sign[Plus@@(Table[2 k+1,{k,0,l-1}]A[[n]])]ip /Sqrt[A[[n]].A[[n]]]
-]//Simplify;
-InceS[TotN,\[Mu],\[Epsilon],zl]
+If[norm=="pol",
+Sign[Plus@@(Table[2 k+1,{k,0,l-1}]A[[n]])]ip /Sqrt[A[[n]].A[[n]]],
+Sign[Plus@@(Table[2 k+1,{k,0,l-1}]A[[n]])]ip /\[Sqrt](Total[Gamma[l+(Range[1,TotN,2]+1)/2]Gamma[l+(-Range[1,TotN,2]+1)/2]A[[n]]^2])
 ]
+];
+InceS[TotN,\[Mu],\[Epsilon],z]
+]
+
 
 
 End[];
@@ -168,11 +182,26 @@ CartesianToElliptical[f_,x_,y_]:=Block[{zEll},
 zEll=ArcCosh[(x+I y)/f];
 {Re[ArcCosh[(x+I y)/f]],Piecewise[{{Im[zEll],Im[zEll]>=0},{2\[Pi]+Im[zEll],Im[zEll]<0}}]}]
 
-InceGauss[parity_,TotN_,\[Mu]_,\[Epsilon]_,x_,y_]:=Block[{\[Xi],\[Eta]},
+InceGauss[parity_,TotN_,\[Mu]_,\[Epsilon]_,x_,y_]:=Block[{\[Xi],\[Eta],InceK,derInceK,norm,trigList,coef0},
 {\[Xi],\[Eta]}=CartesianToElliptical[Sqrt[\[Epsilon]/2],x,y];
-If[parity=="e",
-(InceC[TotN,\[Mu],\[Epsilon],I \[Xi]])(InceC[TotN,\[Mu],\[Epsilon],\[Eta]]),
-(InceS[TotN,\[Mu],\[Epsilon],I \[Xi]])(InceS[TotN,\[Mu],\[Epsilon],\[Eta]])]Exp[-(x^2+y^2)]
+InceK[zz_]=If[parity=="e",InceC[TotN,\[Mu],\[Epsilon],zz,"ig"],InceS[TotN,\[Mu],\[Epsilon],zz,"ig"]];
+derInceK[zz_]=D[InceK[zz],zz];
+
+norm = If[parity=="e",
+trigList=Table[Cos[k zz],{k,1,TotN}];
+coef0=Total[Prepend[Map[Coefficient[InceK[zz],#]&,trigList],InceK[zz]/.Thread[trigList->0]][[;;2]]];
+If[EvenQ[TotN],
+ ((-1)^(\[Mu]/2) 2coef0 Gamma[TotN/2+1])/(Sqrt[\[Pi]] InceK[0]InceK[\[Pi]/2]),
+ ((-1)^((\[Mu]+1)/2) 2 Sqrt[\[Epsilon]]coef0 Gamma[(TotN+1)/2+1])/(Sqrt[\[Pi]] InceK[0]derInceK[\[Pi]/2])],
+trigList=Table[Sin[k zz],{k,1,2}];
+coef0=Total[Map[Coefficient[InceK[zz],#]&,trigList]];
+If[EvenQ[TotN],
+ ((-1)^(\[Mu]/2) 2Sqrt[1]coef0 \[Epsilon] Gamma[TotN/2+2])/(Sqrt[\[Pi]] derInceK[0]derInceK[\[Pi]/2]) I,
+((-1)^((\[Mu]-1)/2) 2 Sqrt[\[Epsilon]]coef0 Gamma[(TotN+1)/2+1])/(Sqrt[\[Pi]] derInceK[0]InceK[\[Pi]/2]) I
+]
+];
+
+norm InceK[I \[Xi]]InceK[\[Eta]]Exp[-(x^2+y^2)]
 ]
 InceGauss[parity_,TotN_,\[Mu]_,\[Epsilon]_,x_,y_,z_]:=1/Sqrt[1+z^2] InceGauss[parity,TotN,\[Mu],\[Epsilon],x/Sqrt[1+z^2],y/Sqrt[1+z^2]]Exp[I (x^2+y^2)/(z+1/z)]Exp[-I(TotN+1)ArcTan[z]]
 InceGauss[parity_,TotN_,\[Mu]_,\[Epsilon]_,x_,y_,0]:=InceGauss[parity,TotN,\[Mu],\[Epsilon],x,y]
@@ -281,14 +310,14 @@ End[];
 (*Define the functions for computing the semiclassical value for the eigenvalue using the quantization condition of the Poincar\[EAcute] path.*)
 
 
-\[CapitalDelta]LbyTwoPiE::usage="\[CapitalDelta]LbyTwoPiE[\[Epsilon]n,an] calculates the helical IG beam \!\(\*SubsuperscriptBox[\(IG\), \(N, \[Mu]\), \((\[PlusMinus])\)]\)(x,y,z). Note that it is not defined for \[Mu]=0. HelicalInceGauss[sign,TotN,\[Mu],\[Epsilon],x,y]=HelicalInceGauss[sign,TotN,\[Mu],\[Epsilon],x,y,0] ";
-GetSemiRcLGregime::usage=""
-GetSemiRcHGregime::usage=""
+GetSemiRcLGregime::usage="GetSemiRcLGregime[TotN,\[Mu],\[Epsilon]] calculates the semiclassical estimates for the radius R and center c of the cylinder defining the Poincar\[EAcute] path in the LG-like regime."
+GetSemiRcHGregime::usage="GetSemiRcHGregime[parity,TotN,\[Mu],\[Epsilon]] calculates the semiclassical estimates for the radius R and center c of the cylinder defining the Poincar\[EAcute] path in the HG-like regime."
 
 
 Begin["`Private`"];
 
 
+(*"\[CapitalDelta]LbyTwoPiE[\[Epsilon]n,an] is proportional to the area between the Poincar\[EAcute] path and the equator which is also quantized."*)
 \[CapitalDelta]LbyTwoPiE[\[Epsilon]n_,an_?NumericQ]:=Block[{c,r},
 c=\[Epsilon]n/2;r=Sqrt[1+c^2-an];
 If[c^2+1<an,1,Chop[2 NIntegrate[Sqrt[(1+c Cos[\[Eta]\[Eta]])^2-r^2],{\[Eta]\[Eta],0,If[r+c<1,Pi,ArcCos[(r-1)/c]]}]/(2 Pi)]]]
@@ -320,18 +349,21 @@ End[];
 (*Parametrization of the Poincar\[EAcute] path*)
 
 
-PeriodPP::usage=""
-SamplingPP::usage=""
-
-
 Begin["`Private`"];
 
 
+(*"PeriodPP[c,R] computes the period of the pendulum defined by the Poincar\[EAcute] path given by the intersection of the sphere with the vertical cylinder with center c and radius R."*)
 PeriodPP[c_,R_]:=Block[{\[CurlyPhi]0},
 \[CurlyPhi]0=If[R+c>1,ArcCos[(1-c^2-R^2)/(2R c)],0];
 If[R+c>1,2,1]NIntegrate[1/Sqrt[1-c^2-R^2-2c R Cos[x]],{x,\[CurlyPhi]0,2\[Pi]-\[CurlyPhi]0}]
 ]
+PeriodPPell[c_,R_]:=Block[{\[CurlyPhi]0,h},
+h=-((4c R)/(1-(R+c)^2));
+\[CurlyPhi]0=If[R+c>1,ArcCos[(1-c^2-R^2)/(2R c)],0];
+4If[R+c>1,2(EllipticF[\[CurlyPhi]0/2,h]-EllipticK[h]),EllipticK[h]]/Sqrt[1-(R+c)^2]
+]
 
+(*"SamplingPP[c,R] computes the period and sampling of the Poincar\[EAcute] path, given by the intersection of the sphere with the vertical cylinder with center c and radius R, by numerically solving the meanfield Gross-Pitaevskii."*)
 SamplingPP[c_,R_,sign_]:=Block[{\[Eta]0,tcoord},
 If[Abs[c-R]>1,Message[ SamplingPP::nointer]];
 \[Eta]0=PeriodPP[c,R];
@@ -349,13 +381,20 @@ End[];
 (*Semiclassical estimates: the ray Ince-Gauss beams*)
 
 
-CoherentStateDecompositionRayIG::usage=""
-CoefficientRayIGinLG::usage=""
-RayInceGauss::usage=""
+CoherentStateDecompositionRayIG::usage="CoherentStateDecompositionRayIG[parsign,TotN,\[Mu],\[Epsilon],regime,Mpts] gives a list containing the coefficients and spherical angles for the semiclassical estimate of the Ince-Gauss beam \!\(\*SubsuperscriptBox[\(IG\), \(TotN, \[Mu]\), \((parsign)\)]\) in the 'LG' or 'HG' regime with parsign representing the sign or parity, respectively. The optional argument Mpts is used to specify the number of points used for the decomposition."
+CoefficientRayIGinLG::usage="CoefficientRayIGinLG[parsign,TotN,\[Mu],\[Epsilon],regime,Mpts] gives the decomposition coefficients in terms of LG beam of the semiclassical estimate of Ince-Gauss beam \!\(\*SubsuperscriptBox[\(IG\), \(TotN, \[Mu]\), \((parsign)\)]\) in the 'LG' or 'HG' regime with parsign representing the sign or parity, respectively. The optional argument Mpts is used to specify the number of points used to comute the semicalsical estimate."
+RayInceGauss::usage="RayInceGauss[parsign,TotN,\[Mu],\[Epsilon],regime,x,y,Mpts] gives the space representaion in Cartesian coordinates (x,y) of the semiclassical estimate of Ince-Gauss beam \!\(\*SubsuperscriptBox[\(IG\), \(TotN, \[Mu]\), \((parsign)\)]\) in the 'LG' or 'HG' regime with parsign representing the sign or parity, respectively. The optional argument Mpts is used to specify the number of points used to comute the semicalsical estimate."
 
 
 Begin["`Private`"];
 
+
+Upsilon[c_,R_,\[Eta]_]:=Block[{Cp,Cm,\[Gamma]},
+Cp = 1-(c+R)^2;Cm = 1-(c-R)^2;
+\[Gamma]=I ArcSinh[Tan[\[Eta]]];
+Tan[\[Eta]/2] Sqrt[1-c^2-2c R Cos[\[Eta]]-R^2]+I/Sqrt[Cp] ((2R(c^2-R^2+1))/(c-R) EllipticF[\[Gamma],Cm/Cp]
+-(4c R)/(c^2-R^2) EllipticPi[(1-Cm)/(1-Cp),\[Gamma],Cm/Cp]+Cp EllipticE[\[Gamma],Cm/Cp])
+]
 
 CoherentStateDecompositionRayIG[parsign_,TotN_,\[Mu]_,\[Epsilon]_,regime_,Mpts_:10]:=Block[{R,c,sign,period,tcoord,st1,st2,st3,jac,jacsqrt,phase\[CapitalUpsilon],\[Eta]step},
 {R,c}=Which[regime=="LG",GetSemiRcLGregime[TotN,\[Mu],\[Epsilon]],regime=="HG",GetSemiRcHGregime[parsign,TotN,\[Mu],\[Epsilon]]];
